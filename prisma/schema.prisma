@@ -1,0 +1,352 @@
+// Prisma schema — Sistem Absensi & Manajemen Data Karyawan
+// Lihat docs/copilot-guides/backend-guide.md (bagian "Prompt Siap Pakai #1") untuk spesifikasi sumber.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enum ----------
+
+enum Role {
+  SUPER_ADMIN
+  HRD
+  SUPERVISOR
+  KARYAWAN
+}
+
+enum SuperAdminType {
+  DIREKTUR
+  IT_MAINTENANCE
+}
+
+enum JenisKelamin {
+  L
+  P
+}
+
+enum StatusKaryawan {
+  TETAP
+  KONTRAK
+  HARIAN
+}
+
+enum SatuanUpah {
+  PER_BULAN
+  PER_JAM
+}
+
+enum ProjectStatus {
+  AKTIF
+  SELESAI
+  DIBATALKAN
+}
+
+enum ManpowerMode {
+  SPESIFIK
+  HEADCOUNT
+}
+
+enum ManpowerStatus {
+  MENUNGGU
+  DISETUJUI
+  DITOLAK
+}
+
+enum AssignmentStatus {
+  AKTIF
+  SELESAI
+  DIBATALKAN
+}
+
+enum LokasiKerja {
+  KANTOR
+  LAINNYA
+}
+
+enum StatusKehadiran {
+  TEPAT_WAKTU
+  TERLAMBAT
+  ALFA
+  PULANG_CEPAT
+}
+
+enum JenisCuti {
+  IZIN
+  CUTI_TAHUNAN
+  SAKIT
+  MELAHIRKAN
+}
+
+enum LeaveStatus {
+  MENUNGGU
+  DISETUJUI
+  DITOLAK
+}
+
+enum OvertimeJenis {
+  INDIVIDUAL
+  MASSAL
+}
+
+enum OvertimeStatus {
+  DIAJUKAN
+  DISETUJUI
+  DITOLAK
+  DICATAT_OTOMATIS
+}
+
+enum JenisPengajuan {
+  LEAVE_REQUEST
+  OVERTIME_REQUEST
+  MANPOWER_REQUEST
+  PASSWORD_CHANGE
+}
+
+enum ApprovalHasil {
+  DISETUJUI
+  DITOLAK
+}
+
+enum NotifJenis {
+  PENGAJUAN
+  STATUS_APPROVAL
+  SISTEM
+}
+
+// ---------- Model ----------
+
+model User {
+  id             String          @id @default(cuid())
+  username       String          @unique
+  passwordHash   String
+  role           Role
+  superAdminType SuperAdminType?
+  statusAktif    Boolean         @default(true)
+  lastActiveAt   DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  employee             Employee?
+  createdProjects      Project[]         @relation("ProjectCreatedBy")
+  approvedManpowerReqs ManpowerRequest[]  @relation("ManpowerApprovedBy")
+  inputAttendances     Attendance[]       @relation("AttendanceInputBy")
+  approvedLeaveReqs    LeaveRequest[]     @relation("LeaveApprovedBy")
+  inputOvertimeReqs    OvertimeRequest[]  @relation("OvertimeInputBy")
+  approvalLogs         ApprovalLog[]      @relation("ApprovalActor")
+  notifications        Notification[]
+
+  @@map("users")
+}
+
+model Employee {
+  id                  String         @id @default(cuid())
+  userId              String         @unique
+  user                User           @relation(fields: [userId], references: [id])
+  nik                 String         @unique
+  namaLengkap         String
+  email               String
+  noHp                String
+  alamat              String
+  tanggalLahir        DateTime
+  jenisKelamin        JenisKelamin
+  statusPernikahan    String
+  fotoUrl             String?
+  jabatan             String
+  divisiId            String
+  divisi              Division       @relation("DivisionEmployees", fields: [divisiId], references: [id])
+  statusKaryawan      StatusKaryawan
+  tanggalMulaiKerja   DateTime
+  tanggalAkhirKontrak DateTime?
+  nominalUpah         Decimal
+  satuanUpah          SatuanUpah
+  nominalUpahLembur   Decimal
+  pengaliLembur       Decimal?
+  statusAktif         Boolean        @default(true)
+
+  supervisedDivision       Division?               @relation("DivisionSupervisor")
+  spvProjects               Project[]               @relation("ProjectSpv")
+  manpowerRequestsAsTarget  ManpowerRequest[]        @relation("ManpowerEmployee")
+  projectAssignments        ProjectAssignment[]
+  attendances                Attendance[]
+  leaveRequests               LeaveRequest[]
+  overtimeRequests             OvertimeRequest[]
+  overtimeRequestMembers        OvertimeRequestMember[]
+
+  @@index([divisiId])
+  @@map("employees")
+}
+
+model Division {
+  id                   String    @id @default(cuid())
+  namaDivisi           String
+  supervisorEmployeeId String?   @unique
+  supervisor           Employee? @relation("DivisionSupervisor", fields: [supervisorEmployeeId], references: [id])
+
+  employees        Employee[]        @relation("DivisionEmployees")
+  manpowerRequests ManpowerRequest[]
+
+  @@map("divisions")
+}
+
+model Project {
+  id                   String        @id @default(cuid())
+  namaProjek           String
+  tanggalMulai         DateTime
+  tanggalBerakhir      DateTime
+  deskripsi            String?
+  spvProjectEmployeeId String
+  spvProject           Employee      @relation("ProjectSpv", fields: [spvProjectEmployeeId], references: [id])
+  status               ProjectStatus @default(AKTIF)
+  createdByUserId      String
+  createdBy            User          @relation("ProjectCreatedBy", fields: [createdByUserId], references: [id])
+
+  manpowerRequests ManpowerRequest[]
+  assignments      ProjectAssignment[]
+
+  @@index([spvProjectEmployeeId])
+  @@map("projects")
+}
+
+model ManpowerRequest {
+  id                    String         @id @default(cuid())
+  projectId             String
+  project               Project        @relation(fields: [projectId], references: [id])
+  divisiAsalId          String
+  divisiAsal            Division       @relation(fields: [divisiAsalId], references: [id])
+  mode                  ManpowerMode
+  employeeId            String?
+  employee              Employee?      @relation("ManpowerEmployee", fields: [employeeId], references: [id])
+  jumlahDiminta         Int?
+  kriteria              String?
+  tanggalMulaiPenugasan DateTime
+  tanggalAkhirPenugasan DateTime
+  status                ManpowerStatus @default(MENUNGGU)
+  approvedByUserId      String?
+  approvedBy            User?          @relation("ManpowerApprovedBy", fields: [approvedByUserId], references: [id])
+  approvedAt            DateTime?
+
+  assignments ProjectAssignment[]
+
+  @@index([projectId])
+  @@index([divisiAsalId])
+  @@map("manpower_requests")
+}
+
+model ProjectAssignment {
+  id                String           @id @default(cuid())
+  employeeId        String
+  employee          Employee         @relation(fields: [employeeId], references: [id])
+  projectId         String
+  project           Project          @relation(fields: [projectId], references: [id])
+  manpowerRequestId String?
+  manpowerRequest   ManpowerRequest? @relation(fields: [manpowerRequestId], references: [id])
+  tanggalMulai      DateTime
+  tanggalBerakhir   DateTime
+  status            AssignmentStatus @default(AKTIF)
+
+  @@index([employeeId])
+  @@index([projectId])
+  @@map("project_assignments")
+}
+
+model Attendance {
+  id                   String          @id @default(cuid())
+  employeeId           String
+  employee             Employee        @relation(fields: [employeeId], references: [id])
+  tanggal              DateTime
+  jamMasuk             DateTime?
+  jamKeluar            DateTime?
+  namaProjekAktivitas  String
+  lokasiKerja          LokasiKerja
+  lokasiLainnyaDetail  String?
+  latitude             Decimal?
+  longitude            Decimal?
+  statusKehadiran      StatusKehadiran
+  inputByUserId        String?
+  inputBy              User?           @relation("AttendanceInputBy", fields: [inputByUserId], references: [id])
+  deskripsiInputMassal String?
+
+  @@unique([employeeId, tanggal])
+  @@index([tanggal])
+  @@map("attendances")
+}
+
+model LeaveRequest {
+  id                  String      @id @default(cuid())
+  employeeId          String
+  employee            Employee    @relation(fields: [employeeId], references: [id])
+  jenisCuti           JenisCuti
+  tanggalMulai        DateTime
+  tanggalSelesai      DateTime
+  alasan              String
+  dokumenPendukungUrl String?
+  status              LeaveStatus @default(MENUNGGU)
+  approvedByUserId    String?
+  approvedBy          User?       @relation("LeaveApprovedBy", fields: [approvedByUserId], references: [id])
+  approvedAt          DateTime?
+
+  @@index([employeeId])
+  @@map("leave_requests")
+}
+
+model OvertimeRequest {
+  id              String         @id @default(cuid())
+  employeeId      String?
+  employee        Employee?      @relation(fields: [employeeId], references: [id])
+  jenis           OvertimeJenis
+  tanggal         DateTime
+  deskripsiAlasan String
+  status          OvertimeStatus @default(DIAJUKAN)
+  inputByUserId   String?
+  inputBy         User?          @relation("OvertimeInputBy", fields: [inputByUserId], references: [id])
+
+  members OvertimeRequestMember[]
+
+  @@index([employeeId])
+  @@map("overtime_requests")
+}
+
+model OvertimeRequestMember {
+  id                String          @id @default(cuid())
+  overtimeRequestId String
+  overtimeRequest   OvertimeRequest @relation(fields: [overtimeRequestId], references: [id])
+  employeeId        String
+  employee          Employee        @relation(fields: [employeeId], references: [id])
+
+  @@unique([overtimeRequestId, employeeId])
+  @@map("overtime_request_members")
+}
+
+model ApprovalLog {
+  id             String         @id @default(cuid())
+  jenisPengajuan JenisPengajuan
+  referensiId    String
+  aktorUserId    String
+  aktor          User           @relation("ApprovalActor", fields: [aktorUserId], references: [id])
+  waktu          DateTime       @default(now())
+  hasil          ApprovalHasil
+  catatan        String?
+
+  @@index([jenisPengajuan, referensiId])
+  @@map("approval_logs")
+}
+
+model Notification {
+  id          String     @id @default(cuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  judul       String
+  pesan       String
+  jenis       NotifJenis
+  referensiId String?
+  sudahDibaca Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+
+  @@index([userId, sudahDibaca])
+  @@map("notifications")
+}
