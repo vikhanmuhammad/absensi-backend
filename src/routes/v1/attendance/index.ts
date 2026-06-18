@@ -13,14 +13,28 @@ export const get = [
     try {
       const role = req.user!.role;
       const queryEmployeeId = req.query.employeeId as string | undefined;
-      const divisiId = req.query.divisiId as string | undefined;
+      const queryDivisiId = req.query.divisiId as string | undefined;
       const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
       const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
 
-      // Role privileged (HRD/Super Admin/Supervisor) boleh melihat lintas-karyawan jika employeeId
-      // tidak disebutkan secara eksplisit; Karyawan biasa selalu dibatasi ke datanya sendiri.
-      const employeeId =
-        queryEmployeeId ?? (PRIVILEGED_ROLES.includes(role) ? undefined : req.user!.employeeId ?? undefined);
+      // Karyawan biasa selalu dibatasi ke datanya sendiri
+      let employeeId = queryEmployeeId;
+      let divisiId = queryDivisiId;
+
+      if (!PRIVILEGED_ROLES.includes(role)) {
+        employeeId = req.user!.employeeId ?? undefined;
+      }
+
+      // Supervisor hanya boleh lihat divisi sendiri
+      if (role === 'SUPERVISOR' && req.user!.employeeId) {
+        const supervisor = await db.employee.findUnique({
+          where: { id: req.user!.employeeId },
+          select: { divisiId: true },
+        });
+        if (supervisor) {
+          divisiId = divisiId || supervisor.divisiId;
+        }
+      }
 
       const attendances = await db.attendance.findMany({
         where: {
