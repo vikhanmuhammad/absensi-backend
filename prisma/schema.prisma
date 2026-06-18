@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -151,7 +151,7 @@ model Employee {
   namaLengkap         String
   email               String
   noHp                String
-  alamat              String
+  alamat              String         @db.Text
   tanggalLahir        DateTime
   jenisKelamin        JenisKelamin
   statusPernikahan    String
@@ -183,7 +183,7 @@ model Employee {
 
 model Division {
   id                   String    @id @default(cuid())
-  namaDivisi           String
+  namaDivisi           String    @unique
   supervisorEmployeeId String?   @unique
   supervisor           Employee? @relation("DivisionSupervisor", fields: [supervisorEmployeeId], references: [id])
 
@@ -198,7 +198,7 @@ model Project {
   namaProjek           String
   tanggalMulai         DateTime
   tanggalBerakhir      DateTime
-  deskripsi            String?
+  deskripsi            String?       @db.Text
   spvProjectEmployeeId String
   spvProject           Employee      @relation("ProjectSpv", fields: [spvProjectEmployeeId], references: [id])
   status               ProjectStatus @default(AKTIF)
@@ -222,7 +222,7 @@ model ManpowerRequest {
   employeeId            String?
   employee              Employee?      @relation("ManpowerEmployee", fields: [employeeId], references: [id])
   jumlahDiminta         Int?
-  kriteria              String?
+  kriteria              String?        @db.Text
   tanggalMulaiPenugasan DateTime
   tanggalAkhirPenugasan DateTime
   status                ManpowerStatus @default(MENUNGGU)
@@ -261,15 +261,15 @@ model Attendance {
   tanggal              DateTime
   jamMasuk             DateTime?
   jamKeluar            DateTime?
-  namaProjekAktivitas  String
+  namaProjekAktivitas  String          @db.Text
   lokasiKerja          LokasiKerja
-  lokasiLainnyaDetail  String?
+  lokasiLainnyaDetail  String?         @db.Text
   latitude             Decimal?
   longitude            Decimal?
   statusKehadiran      StatusKehadiran
   inputByUserId        String?
   inputBy              User?           @relation("AttendanceInputBy", fields: [inputByUserId], references: [id])
-  deskripsiInputMassal String?
+  deskripsiInputMassal String?         @db.Text
 
   @@unique([employeeId, tanggal])
   @@index([tanggal])
@@ -283,8 +283,8 @@ model LeaveRequest {
   jenisCuti           JenisCuti
   tanggalMulai        DateTime
   tanggalSelesai      DateTime
-  alasan              String
-  dokumenPendukungUrl String?
+  alasan              String      @db.Text
+  dokumenPendukungUrl String?     @db.Text
   status              LeaveStatus @default(MENUNGGU)
   approvedByUserId    String?
   approvedBy          User?       @relation("LeaveApprovedBy", fields: [approvedByUserId], references: [id])
@@ -300,7 +300,7 @@ model OvertimeRequest {
   employee        Employee?      @relation(fields: [employeeId], references: [id])
   jenis           OvertimeJenis
   tanggal         DateTime
-  deskripsiAlasan String
+  deskripsiAlasan String         @db.Text
   status          OvertimeStatus @default(DIAJUKAN)
   inputByUserId   String?
   inputBy         User?          @relation("OvertimeInputBy", fields: [inputByUserId], references: [id])
@@ -330,7 +330,7 @@ model ApprovalLog {
   aktor          User           @relation("ApprovalActor", fields: [aktorUserId], references: [id])
   waktu          DateTime       @default(now())
   hasil          ApprovalHasil
-  catatan        String?
+  catatan        String?        @db.Text
 
   @@index([jenisPengajuan, referensiId])
   @@map("approval_logs")
@@ -341,7 +341,7 @@ model Notification {
   userId      String
   user        User       @relation(fields: [userId], references: [id])
   judul       String
-  pesan       String
+  pesan       String     @db.Text
   jenis       NotifJenis
   referensiId String?
   sudahDibaca Boolean    @default(false)
