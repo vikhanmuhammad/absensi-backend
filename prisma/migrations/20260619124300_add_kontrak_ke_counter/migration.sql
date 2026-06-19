@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE `employee_promotions` ADD COLUMN `kontrakKeBaru` INTEGER NULL,
+    MODIFY `jenisPromosi` ENUM('HARIAN_KE_KONTRAK', 'KONTRAK_KE_TETAP', 'PERPANJANGAN_KONTRAK', 'PERUBAHAN_GAJI') NOT NULL;
+
+-- AlterTable
+ALTER TABLE `employees` ADD COLUMN `kontrakKe` INTEGER NOT NULL DEFAULT 1;

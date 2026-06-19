@@ -1,4 +1,5 @@
 import { db } from '../utils/db';
+import { runDuePromotions } from './promotionService';
 
 /**
  * Auto-deactivate employees whose contract has ended.
@@ -65,4 +66,28 @@ export function startContractExpiryScheduler() {
   setInterval(check, CHECK_INTERVAL_MS);
 
   console.log('[Scheduler] Penjadwal auto-deactivate kontrak & selesai penugasan aktif');
+}
+
+/**
+ * Terapkan promosi karyawan (EmployeePromotion) yang DIJADWALKAN dan tanggalMulai-nya sudah
+ * tercapai — update status/gaji Employee terkait. Runs every hour via setInterval, juga sekali
+ * saat server start (supaya promosi yang jatuh tempo saat server mati tetap diproses).
+ */
+export function startPromotionScheduler() {
+  const CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 jam
+
+  async function check() {
+    try {
+      const { applied, cancelled } = await runDuePromotions();
+      if (applied > 0) console.log(`[Scheduler] ${applied} promosi karyawan otomatis diterapkan`);
+      if (cancelled > 0) console.log(`[Scheduler] ${cancelled} promosi karyawan dibatalkan (status tidak sesuai lagi)`);
+    } catch (err) {
+      console.error('[Scheduler] Error saat menerapkan promosi karyawan:', err);
+    }
+  }
+
+  check();
+  setInterval(check, CHECK_INTERVAL_MS);
+
+  console.log('[Scheduler] Penjadwal promosi karyawan aktif');
 }

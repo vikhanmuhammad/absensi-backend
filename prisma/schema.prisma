@@ -120,6 +120,19 @@ enum NotifJenis {
   SISTEM
 }
 
+enum JenisPromosi {
+  HARIAN_KE_KONTRAK
+  KONTRAK_KE_TETAP
+  PERPANJANGAN_KONTRAK
+  PERUBAHAN_GAJI
+}
+
+enum PromotionStatus {
+  DIJADWALKAN
+  AKTIF
+  DIBATALKAN
+}
+
 // ---------- Model ----------
 
 model User {
@@ -141,6 +154,7 @@ model User {
   inputOvertimeReqs    OvertimeRequest[]  @relation("OvertimeInputBy")
   approvalLogs         ApprovalLog[]      @relation("ApprovalActor")
   notifications        Notification[]
+  processedPromotions  EmployeePromotion[] @relation("PromotionProcessedBy")
 
   @@map("users")
 }
@@ -164,6 +178,7 @@ model Employee {
   statusKaryawan      StatusKaryawan
   tanggalMulaiKerja   DateTime
   tanggalAkhirKontrak DateTime?
+  kontrakKe           Int            @default(1) // hanya relevan saat statusKaryawan = KONTRAK ("kontrak ke-N")
   nominalUpah         Decimal
   satuanUpah          SatuanUpah
   nominalUpahLembur   Decimal
@@ -178,6 +193,7 @@ model Employee {
   leaveRequests               LeaveRequest[]
   overtimeRequests             OvertimeRequest[]
   overtimeRequestMembers        OvertimeRequestMember[]
+  promotions                      EmployeePromotion[]
 
   @@index([divisiId])
   @@map("employees")
@@ -365,4 +381,31 @@ model SystemSetting {
   updatedAt        DateTime @updatedAt
 
   @@map("system_settings")
+}
+
+// Riwayat promosi status karyawan (Harian->Kontrak, Kontrak->Tetap) dan/atau perubahan gaji.
+// Jika tanggalMulai di masa depan, dibuat DIJADWALKAN dan baru diterapkan ke Employee oleh
+// scheduler saat tanggal tercapai; jika tanggalMulai backdate/hari ini, langsung AKTIF.
+model EmployeePromotion {
+  id                    Int             @id @default(autoincrement())
+  employeeId            Int
+  employee              Employee        @relation(fields: [employeeId], references: [id])
+  jenisPromosi          JenisPromosi
+  statusBaru            StatusKaryawan
+  nominalUpahBaru       Decimal
+  satuanUpahBaru        SatuanUpah
+  nominalUpahLemburBaru Decimal
+  pengaliLemburBaru     Decimal?
+  kontrakKeBaru         Int? // dicatat saat HARIAN_KE_KONTRAK (selalu 1) atau PERPANJANGAN_KONTRAK (n+1)
+  tanggalMulai          DateTime
+  tanggalSelesai        DateTime?
+  status                PromotionStatus @default(DIJADWALKAN)
+  diprosesOlehUserId    Int
+  diprosesOleh          User            @relation("PromotionProcessedBy", fields: [diprosesOlehUserId], references: [id])
+  createdAt             DateTime        @default(now())
+  appliedAt             DateTime?
+
+  @@index([employeeId])
+  @@index([status])
+  @@map("employee_promotions")
 }
