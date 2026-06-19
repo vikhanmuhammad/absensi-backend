@@ -8,8 +8,8 @@ import { requireRole } from '../../../middlewares/role.middleware';
 const querySchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
-  divisiId: z.string().optional(),
-  projectId: z.string().optional(),
+  divisiId: z.coerce.number().optional(),
+  projectId: z.coerce.number().optional(),
 });
 
 // Agregasi sederhana per divisi. TODO: tambahkan filter projectId (join lewat ProjectAssignment)
@@ -33,8 +33,8 @@ export const get = [
       });
 
       const perDivisi = new Map<
-        string,
-        { divisiId: string; namaDivisi: string; hadir: number; terlambat: number; alfa: number }
+        number,
+        { divisiId: number; namaDivisi: string; hadir: number; terlambat: number; alfa: number }
       >();
 
       for (const a of attendances) {

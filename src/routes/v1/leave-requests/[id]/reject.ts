@@ -4,7 +4,7 @@ import { db } from '../../../../utils/db';
 import { apiOk, apiError, handleError } from '../../../../tools/common';
 import { requireAuth } from '../../../../middlewares/auth.middleware';
 import { requireRole, blockItMaintenanceApproval } from '../../../../middlewares/role.middleware';
-import { logApproval, notifyUser } from '../../../../services/approvalService';
+import { logApproval, notifyUser, isAuthorizedForDivision } from '../../../../services/approvalService';
 
 const bodySchema = z.object({ catatan: z.string().optional() });
 
@@ -15,11 +15,16 @@ export const patch = [
   async (req: Request, res: Response) => {
     try {
       const { catatan } = bodySchema.parse(req.body);
-      const id = req.params.id as string;
+      const id = Number(req.params.id);
 
       const leaveRequest = await db.leaveRequest.findUnique({ where: { id }, include: { employee: true } });
       if (!leaveRequest) return apiError(res, 'Pengajuan cuti tidak ditemukan', 404);
       if (leaveRequest.status !== 'MENUNGGU') return apiError(res, 'Pengajuan ini sudah diproses sebelumnya', 400);
+
+      const authorized = await isAuthorizedForDivision(req.user!.role, req.user!.employeeId, leaveRequest.employee.divisiId);
+      if (!authorized) {
+        return apiError(res, 'Anda hanya dapat memproses pengajuan dari divisi Anda sendiri', 403);
+      }
 
       const updated = await db.$transaction(async (tx) => {
         const result = await tx.leaveRequest.update({

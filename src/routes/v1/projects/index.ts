@@ -10,7 +10,7 @@ const createSchema = z.object({
   tanggalMulai: z.string().min(1),
   tanggalBerakhir: z.string().min(1),
   deskripsi: z.string().optional(),
-  spvProjectEmployeeId: z.string().min(1, 'SPV Project wajib ditentukan'),
+  spvProjectEmployeeId: z.coerce.number(),
 });
 
 export const get = [

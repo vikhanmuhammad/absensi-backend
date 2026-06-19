@@ -6,7 +6,7 @@ import { requireAuth } from '../../../middlewares/auth.middleware';
 import { requireRole } from '../../../middlewares/role.middleware';
 
 const bulkSchema = z.object({
-  employeeIds: z.array(z.string().min(1)).min(1, 'Pilih minimal 1 karyawan'),
+  employeeIds: z.array(z.coerce.number()).min(1, 'Pilih minimal 1 karyawan'),
   tanggal: z.string().min(1),
   deskripsiAlasan: z.string().min(1, 'Deskripsi/alasan lembur massal wajib diisi'),
 });

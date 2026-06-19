@@ -7,7 +7,7 @@ import { requireRole } from '../../../middlewares/role.middleware';
 
 const createSchema = z.object({
   namaDivisi: z.string().min(1, 'Nama divisi wajib diisi'),
-  supervisorEmployeeId: z.string().optional(),
+  supervisorEmployeeId: z.coerce.number().optional(),
 });
 
 export const get = [

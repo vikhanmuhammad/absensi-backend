@@ -1,5 +1,7 @@
 // Prisma schema — Sistem Absensi & Manajemen Data Karyawan
 // Lihat docs/copilot-guides/backend-guide.md (bagian "Prompt Siap Pakai #1") untuk spesifikasi sumber.
+// Catatan: seluruh id (PK & FK) memakai Int autoincrement (1, 2, 3, ...) agar mudah ditrack manual
+// di database selama development — bukan cuid.
 
 generator client {
   provider = "prisma-client-js"
@@ -121,7 +123,7 @@ enum NotifJenis {
 // ---------- Model ----------
 
 model User {
-  id             String          @id @default(cuid())
+  id             Int             @id @default(autoincrement())
   username       String          @unique
   passwordHash   String
   role           Role
@@ -144,8 +146,8 @@ model User {
 }
 
 model Employee {
-  id                  String         @id @default(cuid())
-  userId              String         @unique
+  id                  Int            @id @default(autoincrement())
+  userId              Int            @unique
   user                User           @relation(fields: [userId], references: [id])
   nik                 String         @unique
   namaLengkap         String
@@ -157,7 +159,7 @@ model Employee {
   statusPernikahan    String
   fotoUrl             String?
   jabatan             String
-  divisiId            String
+  divisiId            Int
   divisi              Division       @relation("DivisionEmployees", fields: [divisiId], references: [id])
   statusKaryawan      StatusKaryawan
   tanggalMulaiKerja   DateTime
@@ -182,9 +184,9 @@ model Employee {
 }
 
 model Division {
-  id                   String    @id @default(cuid())
+  id                   Int       @id @default(autoincrement())
   namaDivisi           String    @unique
-  supervisorEmployeeId String?   @unique
+  supervisorEmployeeId Int?      @unique
   supervisor           Employee? @relation("DivisionSupervisor", fields: [supervisorEmployeeId], references: [id])
 
   employees        Employee[]        @relation("DivisionEmployees")
@@ -194,15 +196,15 @@ model Division {
 }
 
 model Project {
-  id                   String        @id @default(cuid())
+  id                   Int           @id @default(autoincrement())
   namaProjek           String
   tanggalMulai         DateTime
   tanggalBerakhir      DateTime
   deskripsi            String?       @db.Text
-  spvProjectEmployeeId String
+  spvProjectEmployeeId Int
   spvProject           Employee      @relation("ProjectSpv", fields: [spvProjectEmployeeId], references: [id])
   status               ProjectStatus @default(AKTIF)
-  createdByUserId      String
+  createdByUserId      Int
   createdBy            User          @relation("ProjectCreatedBy", fields: [createdByUserId], references: [id])
 
   manpowerRequests ManpowerRequest[]
@@ -213,20 +215,20 @@ model Project {
 }
 
 model ManpowerRequest {
-  id                    String         @id @default(cuid())
-  projectId             String
+  id                    Int            @id @default(autoincrement())
+  projectId             Int
   project               Project        @relation(fields: [projectId], references: [id])
-  divisiAsalId          String
+  divisiAsalId          Int
   divisiAsal            Division       @relation(fields: [divisiAsalId], references: [id])
   mode                  ManpowerMode
-  employeeId            String?
+  employeeId            Int?
   employee              Employee?      @relation("ManpowerEmployee", fields: [employeeId], references: [id])
   jumlahDiminta         Int?
   kriteria              String?        @db.Text
   tanggalMulaiPenugasan DateTime
   tanggalAkhirPenugasan DateTime
   status                ManpowerStatus @default(MENUNGGU)
-  approvedByUserId      String?
+  approvedByUserId      Int?
   approvedBy            User?          @relation("ManpowerApprovedBy", fields: [approvedByUserId], references: [id])
   approvedAt            DateTime?
 
@@ -238,12 +240,12 @@ model ManpowerRequest {
 }
 
 model ProjectAssignment {
-  id                String           @id @default(cuid())
-  employeeId        String
+  id                Int              @id @default(autoincrement())
+  employeeId        Int
   employee          Employee         @relation(fields: [employeeId], references: [id])
-  projectId         String
+  projectId         Int
   project           Project          @relation(fields: [projectId], references: [id])
-  manpowerRequestId String?
+  manpowerRequestId Int?
   manpowerRequest   ManpowerRequest? @relation(fields: [manpowerRequestId], references: [id])
   tanggalMulai      DateTime
   tanggalBerakhir   DateTime
@@ -255,8 +257,8 @@ model ProjectAssignment {
 }
 
 model Attendance {
-  id                   String          @id @default(cuid())
-  employeeId           String
+  id                   Int             @id @default(autoincrement())
+  employeeId           Int
   employee             Employee        @relation(fields: [employeeId], references: [id])
   tanggal              DateTime
   jamMasuk             DateTime?
@@ -267,7 +269,7 @@ model Attendance {
   latitude             Decimal?
   longitude            Decimal?
   statusKehadiran      StatusKehadiran
-  inputByUserId        String?
+  inputByUserId        Int?
   inputBy              User?           @relation("AttendanceInputBy", fields: [inputByUserId], references: [id])
   deskripsiInputMassal String?         @db.Text
 
@@ -277,8 +279,8 @@ model Attendance {
 }
 
 model LeaveRequest {
-  id                  String      @id @default(cuid())
-  employeeId          String
+  id                  Int         @id @default(autoincrement())
+  employeeId          Int
   employee            Employee    @relation(fields: [employeeId], references: [id])
   jenisCuti           JenisCuti
   tanggalMulai        DateTime
@@ -286,7 +288,7 @@ model LeaveRequest {
   alasan              String      @db.Text
   dokumenPendukungUrl String?     @db.Text
   status              LeaveStatus @default(MENUNGGU)
-  approvedByUserId    String?
+  approvedByUserId    Int?
   approvedBy          User?       @relation("LeaveApprovedBy", fields: [approvedByUserId], references: [id])
   approvedAt          DateTime?
 
@@ -295,14 +297,14 @@ model LeaveRequest {
 }
 
 model OvertimeRequest {
-  id              String         @id @default(cuid())
-  employeeId      String?
+  id              Int            @id @default(autoincrement())
+  employeeId      Int?
   employee        Employee?      @relation(fields: [employeeId], references: [id])
   jenis           OvertimeJenis
   tanggal         DateTime
   deskripsiAlasan String         @db.Text
   status          OvertimeStatus @default(DIAJUKAN)
-  inputByUserId   String?
+  inputByUserId   Int?
   inputBy         User?          @relation("OvertimeInputBy", fields: [inputByUserId], references: [id])
 
   members OvertimeRequestMember[]
@@ -312,10 +314,10 @@ model OvertimeRequest {
 }
 
 model OvertimeRequestMember {
-  id                String          @id @default(cuid())
-  overtimeRequestId String
+  id                Int             @id @default(autoincrement())
+  overtimeRequestId Int
   overtimeRequest   OvertimeRequest @relation(fields: [overtimeRequestId], references: [id])
-  employeeId        String
+  employeeId        Int
   employee          Employee        @relation(fields: [employeeId], references: [id])
 
   @@unique([overtimeRequestId, employeeId])
@@ -323,10 +325,10 @@ model OvertimeRequestMember {
 }
 
 model ApprovalLog {
-  id             String         @id @default(cuid())
+  id             Int            @id @default(autoincrement())
   jenisPengajuan JenisPengajuan
-  referensiId    String
-  aktorUserId    String
+  referensiId    Int
+  aktorUserId    Int
   aktor          User           @relation("ApprovalActor", fields: [aktorUserId], references: [id])
   waktu          DateTime       @default(now())
   hasil          ApprovalHasil
@@ -337,13 +339,13 @@ model ApprovalLog {
 }
 
 model Notification {
-  id          String     @id @default(cuid())
-  userId      String
+  id          Int        @id @default(autoincrement())
+  userId      Int
   user        User       @relation(fields: [userId], references: [id])
   judul       String
   pesan       String     @db.Text
   jenis       NotifJenis
-  referensiId String?
+  referensiId Int?
   sudahDibaca Boolean    @default(false)
   createdAt   DateTime   @default(now())
 

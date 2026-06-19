@@ -7,14 +7,14 @@ import { requireRole } from '../../../middlewares/role.middleware';
 
 const updateSchema = z.object({
   namaDivisi: z.string().optional(),
-  supervisorEmployeeId: z.string().optional(),
+  supervisorEmployeeId: z.coerce.number().optional(),
 });
 
 export const get = [
   requireAuth,
   async (req: Request, res: Response) => {
     try {
-      const id = req.params.id as string;
+      const id = Number(req.params.id);
       const division = await db.division.findUnique({
         where: { id },
         include: { supervisor: true, employees: true },
@@ -32,7 +32,7 @@ export const patch = [
   requireRole(['SUPER_ADMIN', 'HRD']),
   async (req: Request, res: Response) => {
     try {
-      const id = req.params.id as string;
+      const id = Number(req.params.id);
       const data = updateSchema.parse(req.body);
 
       const existing = await db.division.findUnique({ where: { id } });

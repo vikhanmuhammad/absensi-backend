@@ -7,8 +7,8 @@ import { requireRole } from '../../../middlewares/role.middleware';
 
 const querySchema = z.object({
   search: z.string().optional(),
-  projectId: z.string().optional(),
-  divisiId: z.string().optional(),
+  projectId: z.coerce.number().optional(),
+  divisiId: z.coerce.number().optional(),
 });
 
 export const get = [

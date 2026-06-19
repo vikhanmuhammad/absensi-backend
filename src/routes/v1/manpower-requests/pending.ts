@@ -9,7 +9,15 @@ export const get = [
   requireRole(['SUPERVISOR', 'HRD', 'SUPER_ADMIN']),
   async (req: Request, res: Response) => {
     try {
-      const divisiId = req.query.divisiId as string | undefined;
+      // Supervisor hanya melihat request dari divisinya sendiri (override query param demi keamanan).
+      // HRD/Super Admin boleh memfilter divisi manapun lewat query, atau tanpa filter untuk lihat semua.
+      let divisiId = req.query.divisiId ? Number(req.query.divisiId) : undefined;
+      if (req.user!.role === 'SUPERVISOR') {
+        const supervisor = req.user!.employeeId
+          ? await db.employee.findUnique({ where: { id: req.user!.employeeId }, select: { divisiId: true } })
+          : null;
+        divisiId = supervisor?.divisiId;
+      }
 
       const manpowerRequests = await db.manpowerRequest.findMany({
         where: { status: 'MENUNGGU', divisiAsalId: divisiId },

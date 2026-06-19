@@ -10,7 +10,7 @@ export const get = [
   requireAuth,
   async (req: Request, res: Response) => {
     try {
-      const queryEmployeeId = req.query.employeeId as string | undefined;
+      const queryEmployeeId = req.query.employeeId ? Number(req.query.employeeId) : undefined;
       const role = req.user!.role;
 
       // Role privileged boleh melihat riwayat cuti karyawan lain (dipakai halaman Detail Karyawan);

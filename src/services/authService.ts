@@ -2,9 +2,9 @@ import jwt from 'jsonwebtoken';
 import { Role, SuperAdminType } from '@prisma/client';
 
 interface TokenPayload {
-  userId: string;
+  userId: number;
   role: Role;
-  employeeId: string | null;
+  employeeId: number | null;
   superAdminType: SuperAdminType | null;
 }
 

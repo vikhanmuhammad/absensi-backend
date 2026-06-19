@@ -4,11 +4,11 @@ import { db } from '../../../../utils/db';
 import { apiOk, apiError, handleError } from '../../../../tools/common';
 import { requireAuth } from '../../../../middlewares/auth.middleware';
 import { requireRole, blockItMaintenanceApproval } from '../../../../middlewares/role.middleware';
-import { logApproval } from '../../../../services/approvalService';
+import { logApproval, isAuthorizedForDivision } from '../../../../services/approvalService';
 
 const bodySchema = z.object({
   // Wajib diisi untuk mode HEADCOUNT (memilih siapa yang ditugaskan); diabaikan untuk mode SPESIFIK.
-  employeeId: z.string().optional(),
+  employeeId: z.coerce.number().optional(),
 });
 
 export const patch = [
@@ -18,11 +18,16 @@ export const patch = [
   async (req: Request, res: Response) => {
     try {
       const { employeeId } = bodySchema.parse(req.body);
-      const id = req.params.id as string;
+      const id = Number(req.params.id);
 
       const manpowerRequest = await db.manpowerRequest.findUnique({ where: { id } });
       if (!manpowerRequest) return apiError(res, 'Request manpower tidak ditemukan', 404);
       if (manpowerRequest.status !== 'MENUNGGU') return apiError(res, 'Request ini sudah diproses sebelumnya', 400);
+
+      const authorized = await isAuthorizedForDivision(req.user!.role, req.user!.employeeId, manpowerRequest.divisiAsalId);
+      if (!authorized) {
+        return apiError(res, 'Anda hanya dapat memproses request manpower dari divisi Anda sendiri', 403);
+      }
 
       if (manpowerRequest.mode === 'HEADCOUNT' && !employeeId) {
         return apiError(res, 'Pilih karyawan yang akan ditugaskan untuk request mode Headcount', 400);

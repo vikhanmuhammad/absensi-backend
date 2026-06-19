@@ -24,7 +24,7 @@ export function hitungStatusMasuk(jamMasuk: Date, statusKaryawan: StatusKaryawan
 }
 
 /** Cek apakah karyawan sedang "Assigned to Project" pada tanggal tertentu (FR-ABS-02). */
-export async function getActiveProjectAssignment(employeeId: string, tanggal: Date) {
+export async function getActiveProjectAssignment(employeeId: number, tanggal: Date) {
   return db.projectAssignment.findFirst({
     where: {
       employeeId,

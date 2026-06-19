@@ -8,7 +8,7 @@ import { requireRole } from '../../../middlewares/role.middleware';
 
 const listQuerySchema = z.object({
   search: z.string().optional(),
-  divisiId: z.string().optional(),
+  divisiId: z.coerce.number().optional(),
   statusKaryawan: z.enum(['TETAP', 'KONTRAK', 'HARIAN']).optional(),
 });
 
@@ -63,7 +63,7 @@ const createSchema = z.object({
   jenisKelamin: z.enum(['L', 'P']),
   statusPernikahan: z.string().min(1),
   jabatan: z.string().min(1, 'Jabatan wajib diisi'),
-  divisiId: z.string().min(1, 'Divisi wajib dipilih'),
+  divisiId: z.coerce.number(),
   statusKaryawan: z.enum(['TETAP', 'KONTRAK', 'HARIAN']),
   tanggalMulaiKerja: z.string().min(1, 'Tanggal mulai kerja wajib diisi'),
   tanggalAkhirKontrak: z.string().optional().nullable(),

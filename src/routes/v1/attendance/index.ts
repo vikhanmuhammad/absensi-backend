@@ -12,8 +12,8 @@ export const get = [
   async (req: Request, res: Response) => {
     try {
       const role = req.user!.role;
-      const queryEmployeeId = req.query.employeeId as string | undefined;
-      const queryDivisiId = req.query.divisiId as string | undefined;
+      const queryEmployeeId = req.query.employeeId ? Number(req.query.employeeId) : undefined;
+      const queryDivisiId = req.query.divisiId ? Number(req.query.divisiId) : undefined;
       const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
       const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
 

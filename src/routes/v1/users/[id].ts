@@ -14,7 +14,7 @@ export const patch = [
   requireRole(['SUPER_ADMIN', 'HRD']),
   async (req: Request, res: Response) => {
     try {
-      const id = req.params.id as string;
+      const id = Number(req.params.id);
       const data = updateSchema.parse(req.body);
 
       const existing = await db.user.findUnique({ where: { id } });

@@ -7,7 +7,7 @@ import { requireRole } from '../../../middlewares/role.middleware';
 import { startOfDay } from '../../../services/attendanceService';
 
 const bulkSchema = z.object({
-  employeeId: z.string().min(1),
+  employeeId: z.coerce.number(),
   tanggal: z.string().min(1),
   jamMasuk: z.string().min(1),
   jamKeluar: z.string().optional(),

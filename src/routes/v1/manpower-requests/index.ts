@@ -6,10 +6,10 @@ import { requireAuth } from '../../../middlewares/auth.middleware';
 
 const createSchema = z
   .object({
-    projectId: z.string().min(1),
-    divisiAsalId: z.string().min(1),
+    projectId: z.coerce.number(),
+    divisiAsalId: z.coerce.number(),
     mode: z.enum(['SPESIFIK', 'HEADCOUNT']),
-    employeeId: z.string().optional(),
+    employeeId: z.coerce.number().optional(),
     jumlahDiminta: z.number().int().positive().optional(),
     kriteria: z.string().optional(),
     tanggalMulaiPenugasan: z.string().min(1),

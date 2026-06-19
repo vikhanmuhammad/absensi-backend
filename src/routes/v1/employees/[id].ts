@@ -18,7 +18,7 @@ export const get = [
   requireAuth,
   async (req: Request, res: Response) => {
     try {
-      const id = req.params.id as string;
+      const id = Number(req.params.id);
       const employee = await db.employee.findUnique({
         where: { id },
         include: { divisi: true, user: { select: { username: true, role: true, statusAktif: true } } },
@@ -36,7 +36,7 @@ export const patch = [
   requireRole(['SUPER_ADMIN', 'HRD', 'SUPERVISOR']),
   async (req: Request, res: Response) => {
     try {
-      const id = req.params.id as string;
+      const id = Number(req.params.id);
       const data = updateSchema.parse(req.body);
 
       const existing = await db.employee.findUnique({ where: { id } });

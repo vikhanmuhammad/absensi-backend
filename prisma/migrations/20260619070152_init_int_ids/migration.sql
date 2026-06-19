@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE `users` (
-    `id` VARCHAR(191) NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
     `username` VARCHAR(191) NOT NULL,
     `passwordHash` VARCHAR(191) NOT NULL,
     `role` ENUM('SUPER_ADMIN', 'HRD', 'SUPERVISOR', 'KARYAWAN') NOT NULL,
@@ -16,8 +16,8 @@ CREATE TABLE `users` (
 
 -- CreateTable
 CREATE TABLE `employees` (
-    `id` VARCHAR(191) NOT NULL,
-    `userId` VARCHAR(191) NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `userId` INTEGER NOT NULL,
     `nik` VARCHAR(191) NOT NULL,
     `namaLengkap` VARCHAR(191) NOT NULL,
     `email` VARCHAR(191) NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE `employees` (
     `statusPernikahan` VARCHAR(191) NOT NULL,
     `fotoUrl` VARCHAR(191) NULL,
     `jabatan` VARCHAR(191) NOT NULL,
-    `divisiId` VARCHAR(191) NOT NULL,
+    `divisiId` INTEGER NOT NULL,
     `statusKaryawan` ENUM('TETAP', 'KONTRAK', 'HARIAN') NOT NULL,
     `tanggalMulaiKerja` DATETIME(3) NOT NULL,
     `tanggalAkhirKontrak` DATETIME(3) NULL,
@@ -46,9 +46,9 @@ CREATE TABLE `employees` (
 
 -- CreateTable
 CREATE TABLE `divisions` (
-    `id` VARCHAR(191) NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
     `namaDivisi` VARCHAR(191) NOT NULL,
-    `supervisorEmployeeId` VARCHAR(191) NULL,
+    `supervisorEmployeeId` INTEGER NULL,
 
     UNIQUE INDEX `divisions_namaDivisi_key`(`namaDivisi`),
     UNIQUE INDEX `divisions_supervisorEmployeeId_key`(`supervisorEmployeeId`),
@@ -57,14 +57,14 @@ CREATE TABLE `divisions` (
 
 -- CreateTable
 CREATE TABLE `projects` (
-    `id` VARCHAR(191) NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
     `namaProjek` VARCHAR(191) NOT NULL,
     `tanggalMulai` DATETIME(3) NOT NULL,
     `tanggalBerakhir` DATETIME(3) NOT NULL,
     `deskripsi` TEXT NULL,
-    `spvProjectEmployeeId` VARCHAR(191) NOT NULL,
+    `spvProjectEmployeeId` INTEGER NOT NULL,
     `status` ENUM('AKTIF', 'SELESAI', 'DIBATALKAN') NOT NULL DEFAULT 'AKTIF',
-    `createdByUserId` VARCHAR(191) NOT NULL,
+    `createdByUserId` INTEGER NOT NULL,
 
     INDEX `projects_spvProjectEmployeeId_idx`(`spvProjectEmployeeId`),
     PRIMARY KEY (`id`)
@@ -72,17 +72,17 @@ CREATE TABLE `projects` (
 
 -- CreateTable
 CREATE TABLE `manpower_requests` (
-    `id` VARCHAR(191) NOT NULL,
-    `projectId` VARCHAR(191) NOT NULL,
-    `divisiAsalId` VARCHAR(191) NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `projectId` INTEGER NOT NULL,
+    `divisiAsalId` INTEGER NOT NULL,
     `mode` ENUM('SPESIFIK', 'HEADCOUNT') NOT NULL,
-    `employeeId` VARCHAR(191) NULL,
+    `employeeId` INTEGER NULL,
     `jumlahDiminta` INTEGER NULL,
     `kriteria` TEXT NULL,
     `tanggalMulaiPenugasan` DATETIME(3) NOT NULL,
     `tanggalAkhirPenugasan` DATETIME(3) NOT NULL,
     `status` ENUM('MENUNGGU', 'DISETUJUI', 'DITOLAK') NOT NULL DEFAULT 'MENUNGGU',
-    `approvedByUserId` VARCHAR(191) NULL,
+    `approvedByUserId` INTEGER NULL,
     `approvedAt` DATETIME(3) NULL,
 
     INDEX `manpower_requests_projectId_idx`(`projectId`),
@@ -92,10 +92,10 @@ CREATE TABLE `manpower_requests` (
 
 -- CreateTable
 CREATE TABLE `project_assignments` (
-    `id` VARCHAR(191) NOT NULL,
-    `employeeId` VARCHAR(191) NOT NULL,
-    `projectId` VARCHAR(191) NOT NULL,
-    `manpowerRequestId` VARCHAR(191) NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `employeeId` INTEGER NOT NULL,
+    `projectId` INTEGER NOT NULL,
+    `manpowerRequestId` INTEGER NULL,
     `tanggalMulai` DATETIME(3) NOT NULL,
     `tanggalBerakhir` DATETIME(3) NOT NULL,
     `status` ENUM('AKTIF', 'SELESAI', 'DIBATALKAN') NOT NULL DEFAULT 'AKTIF',
@@ -107,8 +107,8 @@ CREATE TABLE `project_assignments` (
 
 -- CreateTable
 CREATE TABLE `attendances` (
-    `id` VARCHAR(191) NOT NULL,
-    `employeeId` VARCHAR(191) NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `employeeId` INTEGER NOT NULL,
     `tanggal` DATETIME(3) NOT NULL,
     `jamMasuk` DATETIME(3) NULL,
     `jamKeluar` DATETIME(3) NULL,
@@ -118,7 +118,7 @@ CREATE TABLE `attendances` (
     `latitude` DECIMAL(65, 30) NULL,
     `longitude` DECIMAL(65, 30) NULL,
     `statusKehadiran` ENUM('TEPAT_WAKTU', 'TERLAMBAT', 'ALFA', 'PULANG_CEPAT') NOT NULL,
-    `inputByUserId` VARCHAR(191) NULL,
+    `inputByUserId` INTEGER NULL,
     `deskripsiInputMassal` TEXT NULL,
 
     INDEX `attendances_tanggal_idx`(`tanggal`),
@@ -128,15 +128,15 @@ CREATE TABLE `attendances` (
 
 -- CreateTable
 CREATE TABLE `leave_requests` (
-    `id` VARCHAR(191) NOT NULL,
-    `employeeId` VARCHAR(191) NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `employeeId` INTEGER NOT NULL,
     `jenisCuti` ENUM('IZIN', 'CUTI_TAHUNAN', 'SAKIT', 'MELAHIRKAN') NOT NULL,
     `tanggalMulai` DATETIME(3) NOT NULL,
     `tanggalSelesai` DATETIME(3) NOT NULL,
     `alasan` TEXT NOT NULL,
     `dokumenPendukungUrl` TEXT NULL,
     `status` ENUM('MENUNGGU', 'DISETUJUI', 'DITOLAK') NOT NULL DEFAULT 'MENUNGGU',
-    `approvedByUserId` VARCHAR(191) NULL,
+    `approvedByUserId` INTEGER NULL,
     `approvedAt` DATETIME(3) NULL,
 
     INDEX `leave_requests_employeeId_idx`(`employeeId`),
@@ -145,13 +145,13 @@ CREATE TABLE `leave_requests` (
 
 -- CreateTable
 CREATE TABLE `overtime_requests` (
-    `id` VARCHAR(191) NOT NULL,
-    `employeeId` VARCHAR(191) NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `employeeId` INTEGER NULL,
     `jenis` ENUM('INDIVIDUAL', 'MASSAL') NOT NULL,
     `tanggal` DATETIME(3) NOT NULL,
     `deskripsiAlasan` TEXT NOT NULL,
     `status` ENUM('DIAJUKAN', 'DISETUJUI', 'DITOLAK', 'DICATAT_OTOMATIS') NOT NULL DEFAULT 'DIAJUKAN',
-    `inputByUserId` VARCHAR(191) NULL,
+    `inputByUserId` INTEGER NULL,
 
     INDEX `overtime_requests_employeeId_idx`(`employeeId`),
     PRIMARY KEY (`id`)
@@ -159,9 +159,9 @@ CREATE TABLE `overtime_requests` (
 
 -- CreateTable
 CREATE TABLE `overtime_request_members` (
-    `id` VARCHAR(191) NOT NULL,
-    `overtimeRequestId` VARCHAR(191) NOT NULL,
-    `employeeId` VARCHAR(191) NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `overtimeRequestId` INTEGER NOT NULL,
+    `employeeId` INTEGER NOT NULL,
 
     UNIQUE INDEX `overtime_request_members_overtimeRequestId_employeeId_key`(`overtimeRequestId`, `employeeId`),
     PRIMARY KEY (`id`)
@@ -169,10 +169,10 @@ CREATE TABLE `overtime_request_members` (
 
 -- CreateTable
 CREATE TABLE `approval_logs` (
-    `id` VARCHAR(191) NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
     `jenisPengajuan` ENUM('LEAVE_REQUEST', 'OVERTIME_REQUEST', 'MANPOWER_REQUEST', 'PASSWORD_CHANGE') NOT NULL,
-    `referensiId` VARCHAR(191) NOT NULL,
-    `aktorUserId` VARCHAR(191) NOT NULL,
+    `referensiId` INTEGER NOT NULL,
+    `aktorUserId` INTEGER NOT NULL,
     `waktu` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `hasil` ENUM('DISETUJUI', 'DITOLAK') NOT NULL,
     `catatan` TEXT NULL,
@@ -183,12 +183,12 @@ CREATE TABLE `approval_logs` (
 
 -- CreateTable
 CREATE TABLE `notifications` (
-    `id` VARCHAR(191) NOT NULL,
-    `userId` VARCHAR(191) NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `userId` INTEGER NOT NULL,
     `judul` VARCHAR(191) NOT NULL,
     `pesan` TEXT NOT NULL,
     `jenis` ENUM('PENGAJUAN', 'STATUS_APPROVAL', 'SISTEM') NOT NULL,
-    `referensiId` VARCHAR(191) NULL,
+    `referensiId` INTEGER NULL,
     `sudahDibaca` BOOLEAN NOT NULL DEFAULT false,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 

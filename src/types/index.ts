@@ -1,9 +1,9 @@
 import { Role, SuperAdminType } from '@prisma/client';
 
 export interface AuthPayload {
-  userId: string;
+  userId: number;
   role: Role;
-  employeeId: string | null;
+  employeeId: number | null;
   superAdminType: SuperAdminType | null;
 }
 

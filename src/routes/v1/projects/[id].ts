@@ -7,7 +7,7 @@ export const get = [
   requireAuth,
   async (req: Request, res: Response) => {
     try {
-      const id = req.params.id as string;
+      const id = Number(req.params.id);
       const project = await db.project.findUnique({
         where: { id },
         include: {

@@ -7,7 +7,7 @@ export const patch = [
   requireAuth,
   async (req: Request, res: Response) => {
     try {
-      const id = req.params.id as string;
+      const id = Number(req.params.id);
       await db.notification.updateMany({
         where: { id, userId: req.user!.userId },
         data: { sudahDibaca: true },
