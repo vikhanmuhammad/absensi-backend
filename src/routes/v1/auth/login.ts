@@ -3,6 +3,7 @@ import { z } from 'zod';
 import bcrypt from 'bcrypt';
 import { db } from '../../../utils/db';
 import { generateToken } from '../../../services/authService';
+import { isSpvOfAnyActiveProject } from '../../../services/attendanceService';
 import { apiOk, apiError, handleError } from '../../../tools/common';
 
 const loginSchema = z.object({
@@ -36,6 +37,8 @@ export const post = async (req: Request, res: Response) => {
       maxAge: 8 * 60 * 60 * 1000,
     });
 
+    const isSpvProject = user.employee ? await isSpvOfAnyActiveProject(user.employee.id) : false;
+
     return apiOk(
       res,
       {
@@ -43,7 +46,7 @@ export const post = async (req: Request, res: Response) => {
         username: user.username,
         role: user.role,
         superAdminType: user.superAdminType,
-        employee: user.employee,
+        employee: user.employee ? { ...user.employee, isSpvProject } : null,
       },
       'Login berhasil',
     );

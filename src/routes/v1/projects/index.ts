@@ -15,9 +15,21 @@ const createSchema = z.object({
 
 export const get = [
   requireAuth,
-  async (_req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     try {
+      // Jika aktor sedang menjadi SPV Project untuk projek manapun, dia hanya melihat projek yang
+      // dia pimpin saja — kecuali HRD/Super Admin yang tetap punya visibilitas penuh atas semua projek.
+      const isPrivileged = ['SUPER_ADMIN', 'HRD'].includes(req.user!.role);
+      let where = {};
+      if (!isPrivileged && req.user!.employeeId) {
+        const spvProjectCount = await db.project.count({ where: { spvProjectEmployeeId: req.user!.employeeId } });
+        if (spvProjectCount > 0) {
+          where = { spvProjectEmployeeId: req.user!.employeeId };
+        }
+      }
+
       const projects = await db.project.findMany({
+        where,
         include: { spvProject: true, _count: { select: { assignments: true } } },
         orderBy: { tanggalMulai: 'desc' },
       });

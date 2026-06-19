@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { db } from '../../../utils/db';
 import { apiOk, apiError, handleError } from '../../../tools/common';
 import { requireAuth } from '../../../middlewares/auth.middleware';
+import { isSpvOfAnyActiveProject } from '../../../services/attendanceService';
 
 export const get = [
   requireAuth,
@@ -12,7 +13,11 @@ export const get = [
         include: { employee: { include: { divisi: true } } },
       });
       if (!user) return apiError(res, 'User tidak ditemukan', 404);
-      return apiOk(res, user, 'Data user berhasil diambil');
+
+      const isSpvProject = user.employee ? await isSpvOfAnyActiveProject(user.employee.id) : false;
+      const data = { ...user, employee: user.employee ? { ...user.employee, isSpvProject } : null };
+
+      return apiOk(res, data, 'Data user berhasil diambil');
     } catch (error) {
       return handleError(res, error);
     }

@@ -17,41 +17,36 @@ const bulkSchema = z.object({
 /**
  * Cek apakah aktor punya wewenang atas employeeId target:
  * - SUPER_ADMIN / HRD → semua karyawan
- * - SUPERVISOR → karyawan divisi yang sama
- * - KARYAWAN (SPV Project) → karyawan yang sedang di-assign ke projek yang dia pimpin
+ * - SUPERVISOR → dirinya sendiri, atau karyawan divisi yang sama yang TIDAK sedang
+ *   di-assign ke projek lain (kalau sedang ditugaskan ke projek lain, itu wewenang SPV Project-nya)
+ * - KARYAWAN (SPV Project) → dirinya sendiri, atau karyawan yang sedang di-assign ke projek yang dia pimpin
  */
 async function isAuthorizedForEmployee(actorUserId: number, actorRole: string, actorEmployeeId: number | null, targetEmployeeId: number): Promise<boolean> {
   if (actorRole === 'SUPER_ADMIN' || actorRole === 'HRD') return true;
+  if (actorEmployeeId && targetEmployeeId === actorEmployeeId) return true;
 
   if (actorRole === 'SUPERVISOR' && actorEmployeeId) {
     const [actor, target] = await Promise.all([
       db.employee.findUnique({ where: { id: actorEmployeeId }, select: { divisiId: true } }),
       db.employee.findUnique({ where: { id: targetEmployeeId }, select: { divisiId: true } }),
     ]);
-    return !!actor && !!target && actor.divisiId === target.divisiId;
+    if (!actor || !target || actor.divisiId !== target.divisiId) return false;
+
+    const activeAssignment = await db.projectAssignment.findFirst({
+      where: { employeeId: targetEmployeeId, status: 'AKTIF' },
+    });
+    return !activeAssignment;
   }
 
   // KARYAWAN: cek apakah aktor adalah SPV Project yang memiliki targetEmployeeId dalam assignment aktif
   if (actorRole === 'KARYAWAN' && actorEmployeeId) {
-    const now = new Date();
-    const activeProject = await db.project.findFirst({
-      where: {
-        spvProjectEmployeeId: actorEmployeeId,
-        status: 'AKTIF',
-        tanggalMulai: { lte: now },
-        tanggalBerakhir: { gte: now },
-      },
+    const activeProjects = await db.project.findMany({
+      where: { spvProjectEmployeeId: actorEmployeeId, status: 'AKTIF' },
       select: { id: true },
     });
-    if (!activeProject) return false;
+    if (activeProjects.length === 0) return false;
     const assignment = await db.projectAssignment.findFirst({
-      where: {
-        employeeId: targetEmployeeId,
-        projectId: activeProject.id,
-        status: 'AKTIF',
-        tanggalMulai: { lte: now },
-        tanggalBerakhir: { gte: now },
-      },
+      where: { employeeId: targetEmployeeId, projectId: { in: activeProjects.map((p) => p.id) }, status: 'AKTIF' },
     });
     return !!assignment;
   }
