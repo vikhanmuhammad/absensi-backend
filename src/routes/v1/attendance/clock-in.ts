@@ -28,8 +28,19 @@ export const post = [
       const input = clockInSchema.parse(req.body);
       const employee = await db.employee.findUnique({ where: { id: employeeId } });
       if (!employee) return apiError(res, 'Karyawan tidak ditemukan', 404);
+      if (!employee.statusAktif) return apiError(res, 'Akun karyawan sudah dinonaktifkan, silakan hubungi HRD', 403);
 
       const now = new Date();
+
+      // Cek apakah kontrak sudah berakhir (untuk karyawan kontrak)
+      if (employee.statusKaryawan === 'KONTRAK' && employee.tanggalAkhirKontrak) {
+        const endDate = new Date(employee.tanggalAkhirKontrak);
+        endDate.setHours(23, 59, 59, 999);
+        if (now > endDate) {
+          return apiError(res, 'Kontrak kerja sudah berakhir, silakan hubungi HRD untuk perpanjangan', 403);
+        }
+      }
+
       const tanggal = startOfDay(now);
 
       const existing = await db.attendance.findUnique({ where: { employeeId_tanggal: { employeeId, tanggal } } });

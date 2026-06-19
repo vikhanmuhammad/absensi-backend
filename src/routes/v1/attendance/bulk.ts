@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { db } from '../../../utils/db';
-import { apiOk, handleError } from '../../../tools/common';
+import { apiOk, apiError, handleError } from '../../../tools/common';
 import { requireAuth } from '../../../middlewares/auth.middleware';
 import { requireRole } from '../../../middlewares/role.middleware';
 import { startOfDay } from '../../../services/attendanceService';
@@ -14,14 +14,68 @@ const bulkSchema = z.object({
   deskripsiInputMassal: z.string().min(1, 'Deskripsi/alasan input massal wajib diisi'),
 });
 
+/**
+ * Cek apakah aktor punya wewenang atas employeeId target:
+ * - SUPER_ADMIN / HRD → semua karyawan
+ * - SUPERVISOR → karyawan divisi yang sama
+ * - KARYAWAN (SPV Project) → karyawan yang sedang di-assign ke projek yang dia pimpin
+ */
+async function isAuthorizedForEmployee(actorUserId: number, actorRole: string, actorEmployeeId: number | null, targetEmployeeId: number): Promise<boolean> {
+  if (actorRole === 'SUPER_ADMIN' || actorRole === 'HRD') return true;
+
+  if (actorRole === 'SUPERVISOR' && actorEmployeeId) {
+    const [actor, target] = await Promise.all([
+      db.employee.findUnique({ where: { id: actorEmployeeId }, select: { divisiId: true } }),
+      db.employee.findUnique({ where: { id: targetEmployeeId }, select: { divisiId: true } }),
+    ]);
+    return !!actor && !!target && actor.divisiId === target.divisiId;
+  }
+
+  // KARYAWAN: cek apakah aktor adalah SPV Project yang memiliki targetEmployeeId dalam assignment aktif
+  if (actorRole === 'KARYAWAN' && actorEmployeeId) {
+    const now = new Date();
+    const activeProject = await db.project.findFirst({
+      where: {
+        spvProjectEmployeeId: actorEmployeeId,
+        status: 'AKTIF',
+        tanggalMulai: { lte: now },
+        tanggalBerakhir: { gte: now },
+      },
+      select: { id: true },
+    });
+    if (!activeProject) return false;
+    const assignment = await db.projectAssignment.findFirst({
+      where: {
+        employeeId: targetEmployeeId,
+        projectId: activeProject.id,
+        status: 'AKTIF',
+        tanggalMulai: { lte: now },
+        tanggalBerakhir: { gte: now },
+      },
+    });
+    return !!assignment;
+  }
+
+  return false;
+}
+
 export const post = [
   requireAuth,
-  requireRole(['SUPERVISOR', 'SUPER_ADMIN', 'HRD']),
+  requireRole(['SUPERVISOR', 'SUPER_ADMIN', 'HRD', 'KARYAWAN']),
   async (req: Request, res: Response) => {
     try {
       const input = bulkSchema.parse(req.body);
-      // TODO: validasi aktor (Supervisor divisi terkait / SPV Project anggota projeknya)
-      // punya wewenang atas employeeId target sebelum insert — lihat FR-ABS-04.
+
+      const authorized = await isAuthorizedForEmployee(
+        req.user!.userId,
+        req.user!.role,
+        req.user!.employeeId ?? null,
+        input.employeeId,
+      );
+      if (!authorized) {
+        return apiError(res, 'Anda tidak memiliki wewenang untuk menginput absensi karyawan ini', 403);
+      }
+
       const tanggal = startOfDay(new Date(input.tanggal));
 
       const attendance = await db.attendance.upsert({

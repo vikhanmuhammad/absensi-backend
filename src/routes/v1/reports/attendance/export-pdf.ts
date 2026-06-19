@@ -10,6 +10,7 @@ const querySchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   divisiId: z.coerce.number().optional(),
+  projectId: z.coerce.number().optional(),
 });
 
 const COLS = { divisi: 50, hadir: 280, terlambat: 360, alfa: 460 };
@@ -23,7 +24,7 @@ export const get = [
       const divisiId = await resolveSupervisorDivisiScope(req, filter.divisiId);
       const startDate = filter.startDate ? new Date(filter.startDate) : undefined;
       const endDate = filter.endDate ? new Date(filter.endDate) : undefined;
-      const { totalRecords, perDivisi } = await getAttendanceReportRows({ startDate, endDate, divisiId });
+      const { totalRecords, perDivisi } = await getAttendanceReportRows({ startDate, endDate, divisiId, projectId: filter.projectId });
 
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', 'attachment; filename="laporan-absensi.pdf"');

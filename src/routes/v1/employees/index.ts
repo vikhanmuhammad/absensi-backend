@@ -14,12 +14,11 @@ const listQuerySchema = z.object({
 
 export const get = [
   requireAuth,
-  requireRole(['SUPER_ADMIN', 'HRD', 'SUPERVISOR']),
+  requireRole(['SUPER_ADMIN', 'HRD', 'SUPERVISOR', 'KARYAWAN']),
   async (req: Request, res: Response) => {
     try {
       const filter = listQuerySchema.parse(req.query);
 
-      // Supervisor hanya bisa lihat karyawan divisi sendiri
       const where: Record<string, unknown> = {
         statusKaryawan: filter.statusKaryawan,
         namaLengkap: filter.search ? { contains: filter.search } : undefined,
@@ -34,6 +33,32 @@ export const get = [
         if (supervisor) {
           where.divisiId = supervisor.divisiId;
         }
+      } else if (req.user!.role === 'KARYAWAN' && req.user!.employeeId) {
+        // KARYAWAN: hanya boleh jika dia SPV Project — tampilkan anggota projeknya saja
+        const now = new Date();
+        const activeProject = await db.project.findFirst({
+          where: {
+            spvProjectEmployeeId: req.user!.employeeId,
+            status: 'AKTIF',
+            tanggalMulai: { lte: now },
+            tanggalBerakhir: { gte: now },
+          },
+          select: { id: true },
+        });
+        if (!activeProject) {
+          // Bukan SPV Project — tolak akses
+          return apiError(res, 'Anda tidak memiliki akses untuk melihat daftar karyawan', 403);
+        }
+        const assignments = await db.projectAssignment.findMany({
+          where: {
+            projectId: activeProject.id,
+            status: 'AKTIF',
+            tanggalMulai: { lte: now },
+            tanggalBerakhir: { gte: now },
+          },
+          select: { employeeId: true },
+        });
+        where.id = { in: assignments.map((a) => a.employeeId) };
       } else {
         where.divisiId = filter.divisiId;
       }
