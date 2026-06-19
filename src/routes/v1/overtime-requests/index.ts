@@ -33,6 +33,3 @@ export const post = [
     }
   },
 ];
-
-// TODO: implement approve/reject untuk pengajuan INDIVIDUAL (Supervisor/HRD) —
-// lihat FR-REQ-04 & Matriks Approval di docs/flow.md.

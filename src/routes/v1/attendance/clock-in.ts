@@ -38,7 +38,7 @@ export const post = [
       // Jika karyawan sedang "Assigned to Project", sarankan/isi nama projek formal (FR-ABS-02).
       const assignment = await getActiveProjectAssignment(employeeId, tanggal);
       const namaProjekAktivitas = assignment ? assignment.project.namaProjek : input.namaProjekAktivitas;
-      const statusKehadiran = hitungStatusMasuk(now, employee.statusKaryawan);
+      const statusKehadiran = await hitungStatusMasuk(now, employee.statusKaryawan);
 
       const attendance = await db.attendance.upsert({
         where: { employeeId_tanggal: { employeeId, tanggal } },

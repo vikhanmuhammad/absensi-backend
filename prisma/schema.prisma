@@ -352,3 +352,17 @@ model Notification {
   @@index([userId, sudahDibaca])
   @@map("notifications")
 }
+
+// Pengaturan jam kerja standar perusahaan (singleton — selalu 1 baris, id tetap 1).
+// Dipakai oleh attendanceService untuk hitung status TERLAMBAT/ALFA/PULANG_CEPAT,
+// dapat diatur SUPER_ADMIN lewat halaman Pengaturan Sistem.
+model SystemSetting {
+  id               Int      @id @default(autoincrement())
+  jamMasukStandar  String   @default("08:00")
+  jamPulangStandar String   @default("17:00")
+  batasTerlambat   String   @default("08:00")
+  batasAlfa        String   @default("12:00")
+  updatedAt        DateTime @updatedAt
+
+  @@map("system_settings")
+}

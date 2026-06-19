@@ -4,7 +4,7 @@ import { StatusKehadiran } from '@prisma/client';
 import { db } from '../../../utils/db';
 import { apiOk, apiError, handleError } from '../../../tools/common';
 import { requireAuth } from '../../../middlewares/auth.middleware';
-import { startOfDay, JAM_KELUAR_REGULER, omitLocationIfNotPrivileged } from '../../../services/attendanceService';
+import { startOfDay, getJamPulangReguler, omitLocationIfNotPrivileged } from '../../../services/attendanceService';
 
 const clockOutSchema = z.object({
   latitude: z.number().optional(),
@@ -27,7 +27,8 @@ export const post = [
 
       const now = new Date();
       const jamDesimal = now.getHours() + now.getMinutes() / 60;
-      const pulangCepat = jamDesimal < JAM_KELUAR_REGULER;
+      const jamPulangReguler = await getJamPulangReguler();
+      const pulangCepat = jamDesimal < jamPulangReguler;
       const statusKehadiran: StatusKehadiran =
         pulangCepat && existing.statusKehadiran === 'TEPAT_WAKTU' ? 'PULANG_CEPAT' : existing.statusKehadiran;
 
